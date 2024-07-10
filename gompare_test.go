@@ -50,3 +50,12 @@ func TestJaccardSimalarity(t *testing.T) {
 		t.Fatalf("Result wasnt as expected it was: %f", s)
 	}
 }
+
+func TestTfidfVectorizer(t *testing.T)  {
+	a := []string{"hallo", "ich", "bin", "mads"}
+	b := []string{"hallo", "tschüss"}
+
+	r := TfidfVectorizer(a, b)
+
+	fmt.Printf("The TFIDf values: %v", r)
+}

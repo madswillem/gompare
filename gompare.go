@@ -1,5 +1,10 @@
 package gompare
 
+import (
+	"fmt"
+	"math"
+)
+
 func inslice(n string, h []string) bool {
 	for _, v := range h {
 		if v == n {
@@ -39,4 +44,44 @@ func JaccardSimilarity(e []string, f []string) float64 {
 	observationa_in_either := logical_or(e, f)
 	
 	return float64(len(observations_in_both)) / float64(len(observationa_in_either))
+}
+
+
+func TfidfVectorizer(d ...[]string) []map[string]float64 {
+	// Create tf values
+	matrix := make([]map[string]float64, len(d))
+	for i := range matrix {
+		matrix[i] = make(map[string]float64)
+	}
+
+	idf_map := make(map[string]float64)
+
+	// Setting idf_map to later have a dict of all word when calculatin idf
+	for i := range d {
+		for _, s := range d[i] {
+			matrix[i][s] += 1.0 / float64(len(d[i]))
+			idf_map[s] = 0.0
+		}
+	}
+
+	// Create  idf value
+	for s := range idf_map {
+		for i := range d {
+			if inslice(s, d[i]) {
+				idf_map[s] += 1
+			}
+		}
+	}
+
+	fmt.Println(idf_map)
+
+	// Calculate
+	for i := range d {
+		for _, s := range d[i] {
+			fmt.Println(float64(len(d)) / idf_map[s])
+			matrix[i][s] *= math.Log(float64(len(d)) / idf_map[s])
+		}
+	}
+
+	return matrix
 }

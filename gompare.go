@@ -46,8 +46,7 @@ func JaccardSimilarity(e []string, f []string) float64 {
 	return float64(len(observations_in_both)) / float64(len(observationa_in_either))
 }
 
-func TfidfVectorizer(d ...[]string) []map[string]float64 {
-	
+func TfidfVectorizer(d ...[]string) [][]float64 {
 	matrix := make([]map[string]float64, len(d))
 	for i := range matrix {
 		matrix[i] = make(map[string]float64)
@@ -81,5 +80,13 @@ func TfidfVectorizer(d ...[]string) []map[string]float64 {
 		}
 	}
 
-	return matrix
+	//Build vector
+	vector := make([][]float64, len(d))
+	for s := range idf_map {
+		for i := range matrix {
+			vector[i] = append(vector[i], matrix[i][s])
+		}
+	}
+
+	return vector
 }

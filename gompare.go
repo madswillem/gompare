@@ -75,8 +75,9 @@ func TfidfVectorizer(d ...[]string) [][]float64 {
 	// Calculate
 	for i := range d {
 		for _, s := range d[i] {
-			fmt.Printf("idf value for %s: %f \n", s, math.Log10(2))
-			matrix[i][s] *= math.Log10(float64(len(d)) / idf_map[s])
+			fmt.Printf("idf value for %s: %f \n", s, math.Log10(float64(len(d)) / idf_map[s]))
+			fmt.Printf("tf of %s: %f \n", s, matrix[i][s])
+			matrix[i][s] *= math.Log10(float64(len(d)) / 1 + idf_map[s])
 		}
 	}
 
@@ -89,4 +90,32 @@ func TfidfVectorizer(d ...[]string) [][]float64 {
 	}
 
 	return vector
+}
+
+func CosineSimilarity(v1, v2 []float64) float64 {
+
+	// Calculating A * B
+	var dotprodcutAB float64
+	for i := range v1 {
+		dotprodcutAB += v1[i] * v2[i]
+	}
+
+	//Calculating ∥A∥ * ∥B∥
+	var magnitudeA float64
+	var magnitudeB float64
+	var magnitudeAB float64
+
+	for _, f := range v1 {
+		magnitudeA += math.Pow(f, 2)
+	}
+	magnitudeA = math.Sqrt(magnitudeA)
+
+	for _, f := range v2 {
+		magnitudeB += math.Pow(f, 2)
+	}
+	magnitudeB = math.Sqrt(magnitudeB)
+
+	magnitudeAB = magnitudeA * magnitudeB
+
+	return dotprodcutAB / magnitudeAB
 }

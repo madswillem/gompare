@@ -26,7 +26,6 @@ func TestLogicalAnd(t *testing.T) {
 		t.Fatalf("Result wasnt as expected it was: %s", r)
 	}
 }
-
 func TestLogicalOR(t *testing.T) {
 	defer timer("logical_or")()
 	a := []string{"hallo", "ich", "bin", "mads"}
@@ -39,7 +38,6 @@ func TestLogicalOR(t *testing.T) {
 		t.Fatalf("Result wasnt as expected it was: %s", r)
 	}
 }
-
 func TestJaccardSimalarity(t *testing.T) {
 	a := []string{"hallo", "ich", "bin", "mads"}
 	b := []string{"hallo", "tschüss"}
@@ -50,9 +48,8 @@ func TestJaccardSimalarity(t *testing.T) {
 		t.Fatalf("Result wasnt as expected it was: %f", s)
 	}
 }
-
 func TestTfidfVectorizer(t *testing.T) {
-    defer timer("test")()
+	defer timer("test")()
 	a := []string{"hi", "i", "am", "ben"}
 	b := []string{"hi", "bye"}
 
@@ -60,7 +57,6 @@ func TestTfidfVectorizer(t *testing.T) {
 
 	fmt.Printf("The TFIDf values: %v", r)
 }
-
 func TestCosineSimilarity(t *testing.T) {
 	a := []float64{1, 2, 3}
 	b := []float64{4, 5, 6}
@@ -80,7 +76,6 @@ func TestCosineSimilarityWithTFIDF(t *testing.T) {
 
 	fmt.Println(r)
 }
-
 func TestEuclideanDistance(t *testing.T) {
 	type args struct {
 		v1 []float64
@@ -110,11 +105,35 @@ func TestEuclideanDistance(t *testing.T) {
 	}
 }
 
-func TestTes(t *testing.T) {
-	d := [][]string{
-		{"hi", "i", "am", "ben"},
-		{"hi", "bye"},
+func TestCreateWordMatrix(t *testing.T) {
+	type args struct {
+		c [][]string
 	}
-
-	fmt.Println(createWordMatrix(d))
+	tests := []struct {
+		name  string
+		args  args
+		want  map[string]int
+		want1 [][]float64
+	}{
+		// TODO: Add test cases.
+		{
+			name: "test CreatWordMatrix",
+			args: args{
+				c: [][]string{{"hi", "i", "am", "ben"}, {"hi", "bye"}},
+			},
+			want:  map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+			want1: [][]float64{{1, 1, 1, 1, 0}, {1, 0, 0, 0, 1}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := CreateWordMatrix(tt.args.c)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateWordMatrix() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("CreateWordMatrix() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
 }

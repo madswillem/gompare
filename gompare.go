@@ -13,7 +13,7 @@ func inslice(n string, h []string) bool {
 	return false
 }
 
-func createWordMatrix(c [][]string) (map[string]int, [][]float64) {
+func CreateWordMatrix(c [][]string) (map[string]int, [][]float64) {
 	dict := make(map[string]int)
 	vec := make([][]float64, len(c))
 
@@ -71,7 +71,7 @@ func JaccardSimilarity(e []string, f []string) float64 {
 }
 
 func TfidfVectorizer(d ...[]string) [][]float64 {
-	dict, vec := createWordMatrix(d)
+	dict, vec := CreateWordMatrix(d)
 	idf := make(map[string]int, len(dict))
 	for i, n := range dict {
 		for _, v := range vec {

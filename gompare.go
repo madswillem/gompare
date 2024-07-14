@@ -4,8 +4,6 @@ import (
 	"math"
 )
 
-
-
 func inslice(n string, h []string) bool {
 	for _, v := range h {
 		if v == n {
@@ -68,7 +66,7 @@ func logical_or(x []string, y []string) []string {
 func JaccardSimilarity(e []string, f []string) float64 {
 	observations_in_both := logical_and(e, f)
 	observationa_in_either := logical_or(e, f)
-	
+
 	return float64(len(observations_in_both)) / float64(len(observationa_in_either))
 }
 
@@ -77,14 +75,14 @@ func TfidfVectorizer(d ...[]string) [][]float64 {
 	idf := make(map[string]int, len(dict))
 	for i, n := range dict {
 		for _, v := range vec {
-			idf[i] += int(v[n - 1])
+			idf[i] += int(v[n-1])
 		}
 	}
 
 	for i, n := range dict {
 		for v := range vec {
 			vec[v][n-1] /= float64(len(d[v]))
-			vec[v][n-1] *= math.Log10(float64(len(d))/float64(idf[i]))
+			vec[v][n-1] *= math.Log10(float64(len(d)) / float64(idf[i]))
 		}
 	}
 
@@ -126,48 +124,4 @@ func EuclideanDistance(v1, v2 []float64) float64 {
 	}
 
 	return math.Sqrt(ed)
-}
-
-func OldTfidfVectorizer(d ...[]string) [][]float64 {
-	matrix := make([]map[string]float64, len(d))
-	for i := range matrix {
-		matrix[i] = make(map[string]float64)
-	}
-
-	idf_map := make(map[string]float64)
-
-	// Create tf values
-	// Setting idf_map to later have a dict of all terms when calculatin idf
-	for i := range d {
-		for _, s := range d[i] {
-			matrix[i][s] += 1.0 / float64(len(d[i]))
-			idf_map[s] = 0.0
-		}
-	}
-
-	// Calculate the number of documents containing the tearm for each term
-	for s := range idf_map {
-		for i := range d {
-			if inslice(s, d[i]) {
-				idf_map[s] += 1
-			}
-		}
-	}
-
-	// Calculate
-	for i := range d {
-		for _, s := range d[i] {
-			matrix[i][s] *= math.Log10(float64(len(d)) / 1 + idf_map[s])
-		}
-	}
-
-	//Build vector
-	vector := make([][]float64, len(d))
-	for s := range idf_map {
-		for i := range matrix {
-			vector[i] = append(vector[i], matrix[i][s])
-		}
-	}
-
-	return vector
 }

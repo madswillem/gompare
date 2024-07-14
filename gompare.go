@@ -1,9 +1,10 @@
 package gompare
 
 import (
-	"fmt"
 	"math"
 )
+
+
 
 func inslice(n string, h []string) bool {
 	for _, v := range h {
@@ -12,6 +13,31 @@ func inslice(n string, h []string) bool {
 		}
 	}
 	return false
+}
+
+func createWordMatrix(c [][]string) (map[string]int, [][]float64) {
+	dict := make(map[string]int)
+	vec := make([][]float64, len(c))
+
+	for _, d := range c {
+		for _, s := range d {
+			if dict[s] != 0 {
+				continue
+			}
+			dict[s] = len(dict) + 1
+		}
+	}
+	for i := range vec {
+		vec[i] = make([]float64, len(dict))
+	}
+
+	for i, d := range c {
+		for _, s := range d {
+			vec[i][dict[s]-1] += 1
+		}
+	}
+
+	return dict, vec
 }
 
 func logical_and(x []string, y []string) []string {
@@ -47,49 +73,22 @@ func JaccardSimilarity(e []string, f []string) float64 {
 }
 
 func TfidfVectorizer(d ...[]string) [][]float64 {
-	matrix := make([]map[string]float64, len(d))
-	for i := range matrix {
-		matrix[i] = make(map[string]float64)
-	}
-
-	idf_map := make(map[string]float64)
-
-	// Create tf values
-	// Setting idf_map to later have a dict of all terms when calculatin idf
-	for i := range d {
-		for _, s := range d[i] {
-			matrix[i][s] += 1.0 / float64(len(d[i]))
-			idf_map[s] = 0.0
+	dict, vec := createWordMatrix(d)
+	idf := make(map[string]int, len(dict))
+	for i, n := range dict {
+		for _, v := range vec {
+			idf[i] += int(v[n - 1])
 		}
 	}
 
-	// Calculate the number of documents containing the tearm for each term
-	for s := range idf_map {
-		for i := range d {
-			if inslice(s, d[i]) {
-				idf_map[s] += 1
-			}
+	for i, n := range dict {
+		for v := range vec {
+			vec[v][n-1] /= float64(len(d[v]))
+			vec[v][n-1] *= math.Log10(float64(len(d))/float64(idf[i]))
 		}
 	}
 
-	// Calculate
-	for i := range d {
-		for _, s := range d[i] {
-			fmt.Printf("idf value for %s: %f \n", s, math.Log10(float64(len(d)) / idf_map[s]))
-			fmt.Printf("tf of %s: %f \n", s, matrix[i][s])
-			matrix[i][s] *= math.Log10(float64(len(d)) / 1 + idf_map[s])
-		}
-	}
-
-	//Build vector
-	vector := make([][]float64, len(d))
-	for s := range idf_map {
-		for i := range matrix {
-			vector[i] = append(vector[i], matrix[i][s])
-		}
-	}
-
-	return vector
+	return vec
 }
 
 func CosineSimilarity(v1, v2 []float64) float64 {
@@ -118,4 +117,57 @@ func CosineSimilarity(v1, v2 []float64) float64 {
 	magnitudeAB = magnitudeA * magnitudeB
 
 	return dotprodcutAB / magnitudeAB
+}
+
+func EuclideanDistance(v1, v2 []float64) float64 {
+	var ed float64
+	for i := range v1 {
+		ed += math.Pow(v1[i]-v2[i], 2)
+	}
+
+	return math.Sqrt(ed)
+}
+
+func OldTfidfVectorizer(d ...[]string) [][]float64 {
+	matrix := make([]map[string]float64, len(d))
+	for i := range matrix {
+		matrix[i] = make(map[string]float64)
+	}
+
+	idf_map := make(map[string]float64)
+
+	// Create tf values
+	// Setting idf_map to later have a dict of all terms when calculatin idf
+	for i := range d {
+		for _, s := range d[i] {
+			matrix[i][s] += 1.0 / float64(len(d[i]))
+			idf_map[s] = 0.0
+		}
+	}
+
+	// Calculate the number of documents containing the tearm for each term
+	for s := range idf_map {
+		for i := range d {
+			if inslice(s, d[i]) {
+				idf_map[s] += 1
+			}
+		}
+	}
+
+	// Calculate
+	for i := range d {
+		for _, s := range d[i] {
+			matrix[i][s] *= math.Log10(float64(len(d)) / 1 + idf_map[s])
+		}
+	}
+
+	//Build vector
+	vector := make([][]float64, len(d))
+	for s := range idf_map {
+		for i := range matrix {
+			vector[i] = append(vector[i], matrix[i][s])
+		}
+	}
+
+	return vector
 }

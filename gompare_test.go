@@ -8,14 +8,14 @@ import (
 )
 
 func timer(name string) func() {
-    start := time.Now()
-    return func() {
-        fmt.Printf("%s took %v\n", name, time.Since(start))
-    }
+	start := time.Now()
+	return func() {
+		fmt.Printf("%s took %v\n", name, time.Since(start))
+	}
 }
 
 func TestLogicalAnd(t *testing.T) {
-	defer timer("logical_and")() 
+	defer timer("logical_and")()
 	a := []string{"hallo", "ich", "bin", "mads"}
 	b := []string{"hallo", "tschüss"}
 	e := []string{"hallo"}
@@ -28,7 +28,7 @@ func TestLogicalAnd(t *testing.T) {
 }
 
 func TestLogicalOR(t *testing.T) {
-	defer timer("logical_or")() 
+	defer timer("logical_or")()
 	a := []string{"hallo", "ich", "bin", "mads"}
 	b := []string{"hallo", "tschüss"}
 	e := []string{"ich", "bin", "mads", "tschüss"}
@@ -51,7 +51,8 @@ func TestJaccardSimalarity(t *testing.T) {
 	}
 }
 
-func TestTfidfVectorizer(t *testing.T)  {
+func TestTfidfVectorizer(t *testing.T) {
+    defer timer("test")()
 	a := []string{"hi", "i", "am", "ben"}
 	b := []string{"hi", "bye"}
 
@@ -78,4 +79,42 @@ func TestCosineSimilarityWithTFIDF(t *testing.T) {
 	r := CosineSimilarity(v[0], v[1])
 
 	fmt.Println(r)
+}
+
+func TestEuclideanDistance(t *testing.T) {
+	type args struct {
+		v1 []float64
+		v2 []float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		// TODO: Add test cases.
+		{
+			name: "test vectors",
+			args: args{
+				v1: []float64{3, 4},
+				v2: []float64{6, 1},
+			},
+			want: 4.242640687119285,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := EuclideanDistance(tt.args.v1, tt.args.v2); got != tt.want {
+				t.Errorf("EuclideanDistance() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTes(t *testing.T) {
+	d := [][]string{
+		{"hi", "i", "am", "ben"},
+		{"hi", "bye"},
+	}
+
+	fmt.Println(createWordMatrix(d))
 }

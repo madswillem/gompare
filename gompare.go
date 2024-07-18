@@ -2,7 +2,89 @@ package gompare
 
 import (
 	"math"
+	"regexp"
+	"strings"
 )
+
+type Matrix struct {
+	Dict map[string]int
+	Vec  [][]float64
+}
+
+type Handler struct {
+	InputStrings [][]string
+	OuputMatrix  Matrix
+	Similarity   float64
+	DictMap      map[string]int
+	Normalizer   func(...string) []string
+	Splitter     func(...string) [][]string
+}
+type Config struct {
+	DictMap    map[string]int
+	Normalizer func(...string) []string
+	Splitter   func(...string) [][]string
+}
+
+func normalier(d ...string) []string {
+	for i, s := range d {
+		// Convert to lowercase
+		s = strings.ToLower(s)
+
+		// Remove punctuation
+		reg, _ := regexp.Compile(`[^\w\s]`)
+		s = reg.ReplaceAllString(s, "")
+
+		// Trim whitespace
+		s := strings.TrimSpace(s)
+
+		// Normalize whitespace (convert multiple spaces to a single space)
+		d[i] = strings.Join(strings.Fields(s), " ")
+	}
+	return d
+}
+func spliter(d ...string) [][]string {
+	split := make([][]string, len(d))
+	for i, s := range d {
+		split[i] = strings.Fields(s)
+	}
+	return split
+}
+
+func New(cfg Config) *Handler {
+	h := &Handler{
+		DictMap:    make(map[string]int),
+		Normalizer: normalier,
+		Splitter:   spliter,
+	}
+	if cfg.DictMap != nil {
+		h.DictMap = cfg.DictMap
+	}
+	if cfg.Normalizer != nil {
+		h.Normalizer = cfg.Normalizer
+	}
+	if cfg.Splitter != nil {
+		h.Splitter = cfg.Splitter
+	}
+
+	return h
+}
+
+func (h *Handler) Add(d ...string) {
+	h.InputStrings = append(h.InputStrings, h.Splitter(h.Normalizer(d...)...)...)
+}
+
+func (h *Handler) TfidfMatrix() {
+	h.OuputMatrix = TfidfVectorizer(CreateWordMatrix(h.InputStrings, &h.DictMap), h.InputStrings...)
+}
+func (h *Handler) NormalMatrix() {
+	h.OuputMatrix = CreateWordMatrix(h.InputStrings, &h.DictMap)
+}
+func (h *Handler) CosineSimilarity(d1, d2 int) {
+	h.Similarity = CosineSimilarity(h.OuputMatrix.Vec[d1], h.OuputMatrix.Vec[d2])
+}
+func (h *Handler) EuclideanDistance(d1, d2 int) {
+	h.Similarity = EuclideanDistance(h.OuputMatrix.Vec[d1], h.OuputMatrix.Vec[d2])
+}
 
 func inslice(n string, h []string) bool {
 	for _, v := range h {
@@ -13,29 +95,33 @@ func inslice(n string, h []string) bool {
 	return false
 }
 
-func CreateWordMatrix(c [][]string) (map[string]int, [][]float64) {
-	dict := make(map[string]int)
-	vec := make([][]float64, len(c))
+func CreateWordMatrix(c [][]string, dict *map[string]int) Matrix {
+	m := Matrix{}
+	m.Vec = make([][]float64, len(c))
+	if dict != nil {
+		m.Dict = *dict
+	}
+	m.Dict = make(map[string]int)
 
 	for _, d := range c {
 		for _, s := range d {
-			if dict[s] != 0 {
+			if m.Dict[s] != 0 {
 				continue
 			}
-			dict[s] = len(dict) + 1
+			m.Dict[s] = len(m.Dict) + 1
 		}
 	}
-	for i := range vec {
-		vec[i] = make([]float64, len(dict))
+	for i := range m.Vec {
+		m.Vec[i] = make([]float64, len(m.Dict))
 	}
 
 	for i, d := range c {
 		for _, s := range d {
-			vec[i][dict[s]-1] += 1
+			m.Vec[i][(m.Dict)[s]-1] += 1
 		}
 	}
 
-	return dict, vec
+	return m
 }
 
 func logical_and(x []string, y []string) []string {
@@ -70,23 +156,23 @@ func JaccardSimilarity(e []string, f []string) float64 {
 	return float64(len(observations_in_both)) / float64(len(observationa_in_either))
 }
 
-func TfidfVectorizer(d ...[]string) [][]float64 {
-	dict, vec := CreateWordMatrix(d)
-	idf := make(map[string]int, len(dict))
-	for i, n := range dict {
-		for _, v := range vec {
+func TfidfVectorizer(m Matrix, d ...[]string) Matrix {
+
+	idf := make(map[string]int, len(m.Dict))
+	for i, n := range m.Dict {
+		for _, v := range m.Vec {
 			idf[i] += int(v[n-1])
 		}
 	}
 
-	for i, n := range dict {
-		for v := range vec {
-			vec[v][n-1] /= float64(len(d[v]))
-			vec[v][n-1] *= math.Log10(float64(len(d)) / float64(idf[i]))
+	for i, n := range m.Dict {
+		for v := range m.Vec {
+			m.Vec[v][n-1] /= float64(len(d[v]))
+			m.Vec[v][n-1] *= math.Log10(float64(len(d)) / float64(idf[i]))
 		}
 	}
 
-	return vec
+	return m
 }
 
 func CosineSimilarity(v1, v2 []float64) float64 {

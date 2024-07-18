@@ -48,15 +48,7 @@ func TestJaccardSimalarity(t *testing.T) {
 		t.Fatalf("Result wasnt as expected it was: %f", s)
 	}
 }
-func TestTfidfVectorizer(t *testing.T) {
-	defer timer("test")()
-	a := []string{"hi", "i", "am", "ben"}
-	b := []string{"hi", "bye"}
 
-	r := TfidfVectorizer(a, b)
-
-	fmt.Printf("The TFIDf values: %v", r)
-}
 func TestCosineSimilarity(t *testing.T) {
 	a := []float64{1, 2, 3}
 	b := []float64{4, 5, 6}
@@ -67,15 +59,7 @@ func TestCosineSimilarity(t *testing.T) {
 		t.Fatalf("Expected cosine similarity 0.9746318461970762 return of the cosine similarity function: %f", r)
 	}
 }
-func TestCosineSimilarityWithTFIDF(t *testing.T) {
-	a := []string{"hi", "i", "am", "ben"}
-	b := []string{"hi", "bye"}
 
-	v := TfidfVectorizer(a, b)
-	r := CosineSimilarity(v[0], v[1])
-
-	fmt.Println(r)
-}
 func TestEuclideanDistance(t *testing.T) {
 	type args struct {
 		v1 []float64
@@ -110,10 +94,9 @@ func TestCreateWordMatrix(t *testing.T) {
 		c [][]string
 	}
 	tests := []struct {
-		name  string
-		args  args
-		want  map[string]int
-		want1 [][]float64
+		name string
+		args args
+		want Matrix
 	}{
 		// TODO: Add test cases.
 		{
@@ -121,19 +104,99 @@ func TestCreateWordMatrix(t *testing.T) {
 			args: args{
 				c: [][]string{{"hi", "i", "am", "ben"}, {"hi", "bye"}},
 			},
-			want:  map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
-			want1: [][]float64{{1, 1, 1, 1, 0}, {1, 0, 0, 0, 1}},
+			want: Matrix{
+				Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+				Vec:  [][]float64{{1, 1, 1, 1, 0}, {1, 0, 0, 0, 1}},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := CreateWordMatrix(tt.args.c)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreateWordMatrix() got = %v, want %v", got, tt.want)
+			m := CreateWordMatrix(tt.args.c, nil)
+			if !reflect.DeepEqual(m.Dict, tt.want.Dict) {
+				t.Errorf("CreateWordMatrix() gotDict = %v, wantDict %v", m.Dict, tt.want.Dict)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("CreateWordMatrix() got1 = %v, want %v", got1, tt.want1)
+			if !reflect.DeepEqual(m.Vec, tt.want.Vec) {
+				t.Errorf("CreateWordMatrix() gotVec = %v, wantVec %v", m.Vec, tt.want.Vec)
 			}
 		})
+	}
+}
+
+func TestTfidfVectorizer(t *testing.T) {
+	type args struct {
+		m Matrix
+		d [][]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want Matrix
+	}{
+		{
+			name: "test tfidf vectorizer using matrix",
+			args: args{
+				m: Matrix{
+					Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+					Vec:  [][]float64{{1, 1, 1, 1, 0}, {1, 0, 0, 0, 1}},
+				},
+				d: [][]string{{"hi", "i", "am", "ben"}, {"hi", "bye"}},
+			},
+			want: Matrix{
+				Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+				Vec:  [][]float64{{0, 0.0752574989159953, 0.0752574989159953, 0.0752574989159953, 0}, {0, 0, 0, 0, 0.1505149978319906}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := TfidfVectorizer(tt.args.m, tt.args.d...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("TfidfVectorizer() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTidfVectorizerWithHandler(t *testing.T) {
+	h := New(Config{})
+	want := Matrix{
+		Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+		Vec:  [][]float64{{0, 0.0752574989159953, 0.0752574989159953, 0.0752574989159953, 0}, {0, 0, 0, 0, 0.1505149978319906}},
+	}
+
+	h.Add("hi i am ben", "hi bye")
+	h.TfidfMatrix()
+
+	if !reflect.DeepEqual(h.OuputMatrix, want) {
+		t.Errorf("TfidfVectorizer() = %v, want %v", h.OuputMatrix, want)
+	}
+}
+
+func TestCosineSimilarityHandler(t *testing.T) {
+	h := New(Config{})
+	want := 0.0
+
+	h.OuputMatrix = Matrix{
+		Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+		Vec:  [][]float64{{0, 0.0752574989159953, 0.0752574989159953, 0.0752574989159953, 0}, {0, 0, 0, 0, 0.1505149978319906}},
+	}
+	h.CosineSimilarity(0, 1)
+
+	if h.Similarity != want {
+		t.Errorf("Cosinesimilarity = %v, want %v", h.Similarity, want)
+	}
+}
+func TestEuclideanDistanceHandler(t *testing.T) {
+	h := New(Config{})
+	want := 0.19911262642443656
+
+	h.OuputMatrix = Matrix{
+		Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+		Vec:  [][]float64{{0, 0.0752574989159953, 0.0752574989159953, 0.0752574989159953, 0}, {0, 0, 0, 0, 0.1505149978319906}},
+	}
+	h.EuclideanDistance(0, 1)
+
+	if h.Similarity != want {
+		t.Errorf("Euclidean Distance = %v, want %v", h.Similarity, want)
 	}
 }

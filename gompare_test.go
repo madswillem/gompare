@@ -2,6 +2,7 @@ package gompare
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -203,5 +204,108 @@ func TestEuclideanDistanceHandler(t *testing.T) {
 
 	if h.Similarity != want {
 		t.Errorf("Euclidean Distance = %v, want %v", h.Similarity, want)
+	}
+}
+
+func TestHandler_CosineSimilarity(t *testing.T) {
+	type fields struct {
+		InputStrings [][]string
+		OutputMatrix Matrix
+		Similarity   float64
+		InputMatrix  Matrix
+		Normalizer   func(...string) []string
+		Splitter     func(...string) [][]string
+	}
+	type args struct {
+		d1 int
+		d2 int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   float64
+	}{
+		{
+			name: "Test CosineSimilarity With Vecs of difrent lengths",
+			fields: fields{
+				OutputMatrix: Matrix{
+					Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+					Vec:  [][]float64{{1, 0, 0, 0, 1}, {1, 1, 1, 1}},
+				},
+			},
+			args: args{
+				d1: 0,
+				d2: 1,
+			},
+			want: 0.353553,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &Handler{
+				InputStrings: tt.fields.InputStrings,
+				OutputMatrix: tt.fields.OutputMatrix,
+				Similarity:   tt.fields.Similarity,
+				InputMatrix:  tt.fields.InputMatrix,
+				Normalizer:   tt.fields.Normalizer,
+				Splitter:     tt.fields.Splitter,
+			}
+			h.CosineSimilarity(tt.args.d1, tt.args.d2)
+
+			const tolerance = 1e-6 // Define a small tolerance level
+
+			if math.Abs(tt.want-h.Similarity) > tolerance {
+				t.Errorf("Want is %f but h.Similarity is %f", tt.want, h.Similarity)
+			}
+		})
+	}
+}
+
+func TestHandler_NormalMatrix(t *testing.T) {
+	type fields struct {
+		InputStrings [][]string
+		OutputMatrix Matrix
+		Similarity   float64
+		InputMatrix  Matrix
+		Normalizer   func(...string) []string
+		Splitter     func(...string) [][]string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want Matrix
+	}{
+		{
+			name: "Test Normal Matrix with input matrix",
+			fields: fields{
+				InputMatrix: Matrix{
+					Dict: map[string]int{"am": 3, "ben": 4, "hi": 1, "i": 2},
+					Vec:  [][]float64{{1, 1, 1, 1}},
+				},
+				InputStrings: [][]string{{"hi", "bye"}},
+			},
+			want: Matrix{
+				Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+				Vec:  [][]float64{{1, 0, 0, 0, 1}, {1, 1, 1, 1}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &Handler{
+				InputStrings: tt.fields.InputStrings,
+				OutputMatrix: tt.fields.OutputMatrix,
+				Similarity:   tt.fields.Similarity,
+				InputMatrix:  tt.fields.InputMatrix,
+				Normalizer:   tt.fields.Normalizer,
+				Splitter:     tt.fields.Splitter,
+			}
+			h.NormalMatrix()
+
+			if !reflect.DeepEqual(h.OutputMatrix.Vec, tt.want.Vec) && !reflect.DeepEqual(h.OutputMatrix.Dict, tt.want.Dict) {
+				t.Errorf("Want Matrix %v but got %v", tt.want, h.OutputMatrix)
+			}
+		})
 	}
 }

@@ -78,9 +78,11 @@ func (h *Handler) Add(d ...string) {
 
 func (h *Handler) TfidfMatrix() {
 	h.OutputMatrix = TfidfVectorizer(CreateWordMatrix(h.InputStrings, &h.InputMatrix.Dict), h.InputStrings...)
+	h.OutputMatrix.Vec = append(h.OutputMatrix.Vec, h.InputMatrix.Vec...)
 }
 func (h *Handler) NormalMatrix() {
 	h.OutputMatrix = CreateWordMatrix(h.InputStrings, &h.InputMatrix.Dict)
+	h.OutputMatrix.Vec = append(h.OutputMatrix.Vec, h.InputMatrix.Vec...)
 }
 func (h *Handler) CosineSimilarity(d1, d2 int) {
 	h.Similarity = CosineSimilarity(h.OutputMatrix.Vec[d1], h.OutputMatrix.Vec[d2])
@@ -101,10 +103,10 @@ func inslice(n string, h []string) bool {
 func CreateWordMatrix(c [][]string, dict *map[string]int) Matrix {
 	m := Matrix{}
 	m.Vec = make([][]float64, len(c))
+	m.Dict = make(map[string]int)
 	if dict != nil {
 		m.Dict = *dict
 	}
-	m.Dict = make(map[string]int)
 
 	for _, d := range c {
 		for _, s := range d {
@@ -180,6 +182,13 @@ func TfidfVectorizer(m Matrix, d ...[]string) Matrix {
 
 func CosineSimilarity(v1, v2 []float64) float64 {
 
+	if len(v1) > len(v2) {
+		v2 = append(v2, make([]float64, len(v1)-len(v2))...)
+	}
+	if len(v2) > len(v1) {
+		v1 = append(v1, make([]float64, len(v2)-len(v1))...)
+	}
+
 	// Calculating A * B
 	var dotprodcutAB float64
 	for i := range v1 {
@@ -207,6 +216,12 @@ func CosineSimilarity(v1, v2 []float64) float64 {
 }
 
 func EuclideanDistance(v1, v2 []float64) float64 {
+	if len(v1) > len(v2) {
+		v2 = append(v2, make([]float64, len(v1)-len(v2))...)
+	}
+	if len(v2) > len(v1) {
+		v1 = append(v1, make([]float64, len(v2)-len(v1))...)
+	}
 	var ed float64
 	for i := range v1 {
 		ed += math.Pow(v1[i]-v2[i], 2)

@@ -13,19 +13,19 @@ type Matrix struct {
 
 type Handler struct {
 	InputStrings [][]string
-	OuputMatrix  Matrix
+	OutputMatrix Matrix
 	Similarity   float64
-	DictMap      map[string]int
+	InputMatrix  Matrix
 	Normalizer   func(...string) []string
 	Splitter     func(...string) [][]string
 }
 type Config struct {
-	DictMap    map[string]int
+	Matrix     Matrix
 	Normalizer func(...string) []string
 	Splitter   func(...string) [][]string
 }
 
-func normalier(d ...string) []string {
+func normalizer(d ...string) []string {
 	for i, s := range d {
 		// Convert to lowercase
 		s = strings.ToLower(s)
@@ -52,12 +52,15 @@ func spliter(d ...string) [][]string {
 
 func New(cfg Config) *Handler {
 	h := &Handler{
-		DictMap:    make(map[string]int),
-		Normalizer: normalier,
-		Splitter:   spliter,
+		InputMatrix: Matrix{},
+		Normalizer:  normalizer,
+		Splitter:    spliter,
 	}
-	if cfg.DictMap != nil {
-		h.DictMap = cfg.DictMap
+	if cfg.Matrix.Vec != nil {
+		h.InputMatrix.Vec = cfg.Matrix.Vec
+	}
+	if cfg.Matrix.Dict != nil {
+		h.InputMatrix.Dict = cfg.Matrix.Dict
 	}
 	if cfg.Normalizer != nil {
 		h.Normalizer = cfg.Normalizer
@@ -74,16 +77,16 @@ func (h *Handler) Add(d ...string) {
 }
 
 func (h *Handler) TfidfMatrix() {
-	h.OuputMatrix = TfidfVectorizer(CreateWordMatrix(h.InputStrings, &h.DictMap), h.InputStrings...)
+	h.OutputMatrix = TfidfVectorizer(CreateWordMatrix(h.InputStrings, &h.InputMatrix.Dict), h.InputStrings...)
 }
 func (h *Handler) NormalMatrix() {
-	h.OuputMatrix = CreateWordMatrix(h.InputStrings, &h.DictMap)
+	h.OutputMatrix = CreateWordMatrix(h.InputStrings, &h.InputMatrix.Dict)
 }
 func (h *Handler) CosineSimilarity(d1, d2 int) {
-	h.Similarity = CosineSimilarity(h.OuputMatrix.Vec[d1], h.OuputMatrix.Vec[d2])
+	h.Similarity = CosineSimilarity(h.OutputMatrix.Vec[d1], h.OutputMatrix.Vec[d2])
 }
 func (h *Handler) EuclideanDistance(d1, d2 int) {
-	h.Similarity = EuclideanDistance(h.OuputMatrix.Vec[d1], h.OuputMatrix.Vec[d2])
+	h.Similarity = EuclideanDistance(h.OutputMatrix.Vec[d1], h.OutputMatrix.Vec[d2])
 }
 
 func inslice(n string, h []string) bool {

@@ -39,6 +39,7 @@ func TestLogicalOR(t *testing.T) {
 	}
 }
 func TestJaccardSimalarity(t *testing.T) {
+	defer timer("jaccard_simalarity")()
 	a := []string{"hallo", "ich", "bin", "mads"}
 	b := []string{"hallo", "tschüss"}
 
@@ -50,6 +51,7 @@ func TestJaccardSimalarity(t *testing.T) {
 }
 
 func TestCosineSimilarity(t *testing.T) {
+	defer timer("cosine_similarity")()
 	a := []float64{1, 2, 3}
 	b := []float64{4, 5, 6}
 
@@ -158,6 +160,7 @@ func TestTfidfVectorizer(t *testing.T) {
 }
 
 func TestTidfVectorizerWithHandler(t *testing.T) {
+	defer timer("tfidf_vectoriter_handler")()
 	h := New(Config{})
 	want := Matrix{
 		Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
@@ -167,16 +170,17 @@ func TestTidfVectorizerWithHandler(t *testing.T) {
 	h.Add("hi i am ben", "hi bye")
 	h.TfidfMatrix()
 
-	if !reflect.DeepEqual(h.OuputMatrix, want) {
-		t.Errorf("TfidfVectorizer() = %v, want %v", h.OuputMatrix, want)
+	if !reflect.DeepEqual(h.OutputMatrix, want) {
+		t.Errorf("TfidfVectorizer() = %v, want %v", h.OutputMatrix, want)
 	}
 }
 
 func TestCosineSimilarityHandler(t *testing.T) {
+	defer timer("cosine_similarity_handler")()
 	h := New(Config{})
 	want := 0.0
 
-	h.OuputMatrix = Matrix{
+	h.OutputMatrix = Matrix{
 		Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
 		Vec:  [][]float64{{0, 0.0752574989159953, 0.0752574989159953, 0.0752574989159953, 0}, {0, 0, 0, 0, 0.1505149978319906}},
 	}
@@ -187,10 +191,11 @@ func TestCosineSimilarityHandler(t *testing.T) {
 	}
 }
 func TestEuclideanDistanceHandler(t *testing.T) {
+	defer timer("euclidean_distance_handler")()
 	h := New(Config{})
 	want := 0.19911262642443656
 
-	h.OuputMatrix = Matrix{
+	h.OutputMatrix = Matrix{
 		Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
 		Vec:  [][]float64{{0, 0.0752574989159953, 0.0752574989159953, 0.0752574989159953, 0}, {0, 0, 0, 0, 0.1505149978319906}},
 	}

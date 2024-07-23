@@ -1,6 +1,7 @@
 package gompare
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -153,8 +154,8 @@ func TestTfidfVectorizer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := TfidfVectorizer(tt.args.m, tt.args.d...); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("TfidfVectorizer() = %v, want %v", got, tt.want)
+			if got, err := TfidfVectorizer(tt.args.m, tt.args.d...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("TfidfVectorizer() = %v, want %v. Error: %e", got, tt.want, err)
 			}
 		})
 	}
@@ -274,8 +275,18 @@ func TestHandler_NormalMatrix(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want Matrix
+		want   Matrix
 	}{
+		{
+			name: "Test Normal Matrix ",
+			fields: fields{
+				InputStrings: [][]string{{"hi", "i", "am", "ben"}, {"hi", "bye"}},
+			},
+			want: Matrix{
+				Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+				Vec:  [][]float64{{1, 0, 0, 0, 1}, {1, 1, 1, 1, 0}},
+			},
+		},
 		{
 			name: "Test Normal Matrix with input matrix",
 			fields: fields{
@@ -304,7 +315,79 @@ func TestHandler_NormalMatrix(t *testing.T) {
 			h.NormalMatrix()
 
 			if !reflect.DeepEqual(h.OutputMatrix.Vec, tt.want.Vec) && !reflect.DeepEqual(h.OutputMatrix.Dict, tt.want.Dict) {
-				t.Errorf("Want Matrix %v but got %v", tt.want, h.OutputMatrix)
+				t.Errorf("%s: want Matrix %v but got %v", tt.name, tt.want, h.OutputMatrix)
+			}
+		})
+	}
+}
+
+func TestHandler_TfidfMatrix(t *testing.T) {
+	type fields struct {
+		InputStrings [][]string
+		OutputMatrix Matrix
+		Similarity   float64
+		InputMatrix  Matrix
+		Normalizer   func(...string) []string
+		Splitter     func(...string) [][]string
+	}
+	type want struct {
+		M Matrix
+		E error
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want want
+	}{
+		{
+			name: "Test Creating TfidfMatrix",
+			fields: fields{
+				InputStrings: [][]string{{"hi", "i", "am", "ben"}, {"hi", "bye"}},
+			},
+			want: want{
+				M: Matrix{
+					Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+					Vec:  [][]float64{{0, 0.0752574989159953, 0.0752574989159953, 0.0752574989159953, 0}, {0, 0, 0, 0, 0.1505149978319906}},
+				},
+				E: nil,
+			},
+		},
+		{
+			name: "Test Creating TfidfMatrix with input matrix",
+			fields: fields{
+				InputMatrix: Matrix{
+					Dict: map[string]int{"am": 3, "ben": 4, "hi": 1, "i": 2},
+					Vec:  [][]float64{{1, 1, 1, 1}},
+				},
+				InputStrings: [][]string{{"hi", "bye"}},
+			},
+			want: want{
+				M: Matrix{
+					Dict: map[string]int{"am": 3, "ben": 4, "bye": 5, "hi": 1, "i": 2},
+					Vec:  [][]float64{{1, 0, 0, 0, 1}, {1, 1, 1, 1}},
+				},
+				E: errors.New("lenght of m and d diffrent"),
+			},
+		},
+
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &Handler{
+				InputStrings: tt.fields.InputStrings,
+				OutputMatrix: tt.fields.OutputMatrix,
+				Similarity:   tt.fields.Similarity,
+				InputMatrix:  tt.fields.InputMatrix,
+				Normalizer:   tt.fields.Normalizer,
+				Splitter:     tt.fields.Splitter,
+			}
+			err := h.TfidfMatrix()
+
+			if !reflect.DeepEqual(h.OutputMatrix, tt.want.M) {
+				t.Errorf("%s: TfidfMatrix() = %v, want %v", tt.name, h.OutputMatrix, tt.want.M)
+			}
+			if !errors.Is(errors.Unwrap(err), errors.Unwrap(tt.want.E)) {
+				t.Errorf("Expected Err %e but got %e", tt.want.E, err)
 			}
 		})
 	}

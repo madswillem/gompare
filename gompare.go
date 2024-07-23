@@ -1,6 +1,7 @@
 package gompare
 
 import (
+	"errors"
 	"math"
 	"regexp"
 	"strings"
@@ -76,12 +77,15 @@ func (h *Handler) Add(d ...string) {
 	h.InputStrings = append(h.InputStrings, h.Splitter(h.Normalizer(d...)...)...)
 }
 
-func (h *Handler) TfidfMatrix() {
-	h.OutputMatrix = TfidfVectorizer(CreateWordMatrix(h.InputStrings, &h.InputMatrix.Dict), h.InputStrings...)
-	h.OutputMatrix.Vec = append(h.OutputMatrix.Vec, h.InputMatrix.Vec...)
+func (h *Handler) TfidfMatrix() error {
+	h.NormalMatrix()
+	var err error
+	h.OutputMatrix, err = TfidfVectorizer(h.OutputMatrix, h.InputStrings...)
+	 
+	return err
 }
 func (h *Handler) NormalMatrix() {
-	h.OutputMatrix = CreateWordMatrix(h.InputStrings, &h.InputMatrix.Dict)
+	h.OutputMatrix = CreateWordMatrix(h.InputStrings, h.InputMatrix.Dict)
 	h.OutputMatrix.Vec = append(h.OutputMatrix.Vec, h.InputMatrix.Vec...)
 }
 func (h *Handler) CosineSimilarity(d1, d2 int) {
@@ -100,12 +104,12 @@ func inslice(n string, h []string) bool {
 	return false
 }
 
-func CreateWordMatrix(c [][]string, dict *map[string]int) Matrix {
+func CreateWordMatrix(c [][]string, dict map[string]int) Matrix {
 	m := Matrix{}
 	m.Vec = make([][]float64, len(c))
 	m.Dict = make(map[string]int)
 	if dict != nil {
-		m.Dict = *dict
+		m.Dict = dict
 	}
 
 	for _, d := range c {
@@ -161,12 +165,15 @@ func JaccardSimilarity(e []string, f []string) float64 {
 	return float64(len(observations_in_both)) / float64(len(observationa_in_either))
 }
 
-func TfidfVectorizer(m Matrix, d ...[]string) Matrix {
+func TfidfVectorizer(m Matrix, d ...[]string) (Matrix, error) {
+	if len(m.Vec) != len(d) {
+		return m, errors.New("lenght of m and d diffrent")
+	}
 
 	idf := make(map[string]int, len(m.Dict))
-	for i, n := range m.Dict {
-		for _, v := range m.Vec {
-			idf[i] += int(v[n-1])
+	for k, n := range m.Dict {
+		for i := range m.Vec {
+			idf[k] += int(m.Vec[i][n-1])
 		}
 	}
 
@@ -177,7 +184,7 @@ func TfidfVectorizer(m Matrix, d ...[]string) Matrix {
 		}
 	}
 
-	return m
+	return m, nil
 }
 
 func CosineSimilarity(v1, v2 []float64) float64 {

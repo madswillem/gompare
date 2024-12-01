@@ -2,6 +2,7 @@ package gompare
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"regexp"
 	"strings"
@@ -19,9 +20,11 @@ type Handler struct {
 	InputMatrix  Matrix
 	Normalizer   func(...string) []string
 	Splitter     func(...string) [][]string
+	RemoveDict   []string
 }
 type Config struct {
 	Matrix     Matrix
+	RemoveDict []string
 	Normalizer func(...string) []string
 	Splitter   func(...string) [][]string
 }
@@ -51,6 +54,23 @@ func spliter(d ...string) [][]string {
 	return split
 }
 
+func cleanup(d, cd []string) []string {
+	r := []string{}
+	for _, s := range d {
+		match := false
+		for _, cs := range cd {
+			if s == cs {
+				match = true
+			}
+		}
+		if !match {
+			r = append(r, s)
+		}
+	}
+	fmt.Println(r)
+	return r
+}
+
 func New(cfg Config) *Handler {
 	h := &Handler{
 		InputMatrix: Matrix{},
@@ -69,19 +89,26 @@ func New(cfg Config) *Handler {
 	if cfg.Splitter != nil {
 		h.Splitter = cfg.Splitter
 	}
+	if len(cfg.RemoveDict) > 0 {
+		h.RemoveDict = cfg.RemoveDict
+	}
 
 	return h
 }
 
 func (h *Handler) Add(d ...string) {
-	h.InputStrings = append(h.InputStrings, h.Splitter(h.Normalizer(d...)...)...)
+	input := h.Splitter(h.Normalizer(d...)...)
+	for i := range input {
+		input[i] = cleanup(input[i], h.RemoveDict)
+	}
+	h.InputStrings = append(h.InputStrings, input...)
 }
 
 func (h *Handler) TfidfMatrix() error {
 	h.NormalMatrix()
 	var err error
 	h.OutputMatrix, err = TfidfVectorizer(h.OutputMatrix, h.InputStrings...)
-	 
+
 	return err
 }
 func (h *Handler) NormalMatrix() {

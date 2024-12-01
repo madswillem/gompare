@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func timer(name string) func() {
@@ -337,7 +339,7 @@ func TestHandler_TfidfMatrix(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want want
+		want   want
 	}{
 		{
 			name: "Test Creating TfidfMatrix",
@@ -369,7 +371,6 @@ func TestHandler_TfidfMatrix(t *testing.T) {
 				E: errors.New("lenght of m and d diffrent"),
 			},
 		},
-
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -390,5 +391,19 @@ func TestHandler_TfidfMatrix(t *testing.T) {
 				t.Errorf("Expected Err %e but got %e", tt.want.E, err)
 			}
 		})
+	}
+}
+
+func TestHandler_Add(t *testing.T) {
+	input := []string{"Water is the best beverage"}
+	expected := [][]string{
+		{"water", "best", "beverage"},
+	}
+	h := New(Config{RemoveDict: Fillerwords_en[:]})
+
+	h.Add(input...)
+
+	if d := cmp.Diff(expected, h.InputStrings); d != "" {
+		fmt.Printf("Expected and Actual are different:\n %s", d)
 	}
 }

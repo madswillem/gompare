@@ -2,7 +2,6 @@ package gompare
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"regexp"
 	"strings"
@@ -20,11 +19,11 @@ type Handler struct {
 	InputMatrix  Matrix
 	Normalizer   func(...string) []string
 	Splitter     func(...string) [][]string
-	RemoveDict   []string
+	RemoveDict   map[string]int
 }
 type Config struct {
 	Matrix     Matrix
-	RemoveDict []string
+	RemoveDict map[string]int
 	Normalizer func(...string) []string
 	Splitter   func(...string) [][]string
 }
@@ -54,20 +53,13 @@ func spliter(d ...string) [][]string {
 	return split
 }
 
-func cleanup(d, cd []string) []string {
+func cleanup(d []string, cd map[string]int) []string {
 	r := []string{}
 	for _, s := range d {
-		match := false
-		for _, cs := range cd {
-			if s == cs {
-				match = true
-			}
-		}
-		if !match {
+		if cd[s] != 1 {
 			r = append(r, s)
 		}
 	}
-	fmt.Println(r)
 	return r
 }
 

@@ -399,7 +399,7 @@ func TestHandler_Add(t *testing.T) {
 	expected := [][]string{
 		{"water", "best", "beverage"},
 	}
-	h := New(Config{RemoveDict: Fillerwords_en[:]})
+	h := New(Config{RemoveDict: Fillerwords_en})
 
 	h.Add(input...)
 
